@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Create Account — ResumeAI</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,900;1,700&family=Epilogue:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+<div class="auth-wrap">
+
+  <!-- LEFT PANEL -->
+  <div class="auth-left">
+    <div class="al-logo">Resume<em>AI</em></div>
+
+    <div class="al-body">
+      <div class="al-tag">Get Started</div>
+      <p class="al-quote">"The right opportunity finds those whose story is told with clarity."</p>
+      <div class="al-features">
+        <div class="al-feat"><span class="al-feat-dot"></span>Free to get started</div>
+        <div class="al-feat"><span class="al-feat-dot"></span>Upload unlimited resumes</div>
+        <div class="al-feat"><span class="al-feat-dot"></span>Personalised role recommendations</div>
+      </div>
+    </div>
+
+    <div class="al-foot">© 2024 ResumeAI &nbsp;·&nbsp; All rights reserved</div>
+  </div>
+
+  <!-- RIGHT PANEL -->
+  <div class="auth-right">
+    <div class="auth-box">
+      <div class="auth-eyebrow">Get started</div>
+      <h1>Create your<br><em>account</em></h1>
+
+      {% if error %}
+      <div class="err">⚠&nbsp; {{ error }}</div>
+      {% endif %}
+
+      <form method="POST" action="/register">
+        <div class="form-row">
+          <label for="email">Email Address</label>
+          <input type="email" id="email" name="email"
+                 placeholder="you@example.com" required autocomplete="email">
+        </div>
+        <div class="form-row">
+          <label for="password">Password</label>
+          <input type="password" id="password" name="password"
+                 placeholder="Min. 6 characters" required autocomplete="new-password">
+        </div>
+        <button type="submit" class="btn btn-primary" style="margin-top:.75rem">
+          Create Account &nbsp;→
+        </button>
+      </form>
+
+      <p class="auth-alt">
+        Already have an account? <a href="/login">Sign in</a>
+      </p>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>

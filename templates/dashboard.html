@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Dashboard — ResumeAI</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,900;1,700&family=Epilogue:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+  <style>
+    /* ── EXTRA STYLES FOR NEW FEATURES ── */
+    .action-bar {
+      display: flex; gap: .55rem; flex-wrap: wrap; margin-top: 1.1rem;
+      padding-top: 1.1rem; border-top: 1px solid var(--cream2);
+    }
+    .action-bar a, .action-bar button {
+      display: inline-flex; align-items: center; gap: .38rem;
+      font-family: 'Epilogue', sans-serif;
+      font-size: .72rem; font-weight: 700; letter-spacing: .05em; text-transform: uppercase;
+      text-decoration: none; padding: .42rem .9rem;
+      border-radius: var(--r); border: 1px solid var(--cream3);
+      background: var(--cream2); color: var(--ink3);
+      cursor: pointer; transition: all .15s;
+    }
+    .action-bar a:hover, .action-bar button:hover { border-color: var(--gold); color: var(--gold); background: var(--gold-bg); }
+    .action-bar .act-ai  { border-color: rgba(124,106,255,.3); background: rgba(124,106,255,.07); color: #6c5ce7; }
+    .action-bar .act-ai:hover  { background: rgba(124,106,255,.14); }
+    .action-bar .act-pdf { border-color: rgba(192,57,43,.25); background: rgba(192,57,43,.05); color: var(--red); }
+    .action-bar .act-pdf:hover { background: rgba(192,57,43,.1); }
+
+    /* skills gap */
+    .skills-section { margin-top: 1rem; }
+    .skills-found-label {
+      font-size: .67rem; font-weight: 800;
+      letter-spacing: .1em; text-transform: uppercase; color: var(--green); margin-bottom: .45rem;
+    }
+    .skills-miss-label {
+      font-size: .67rem; font-weight: 800;
+      letter-spacing: .1em; text-transform: uppercase; color: var(--muted); margin-bottom: .45rem; margin-top: .8rem;
+    }
+    .skill-chip {
+      display: inline-block; font-size: .7rem; font-weight: 600;
+      padding: .22rem .58rem; border-radius: 3px; margin: .18rem .18rem 0 0;
+      background: rgba(30,122,74,.08); border: 1px solid rgba(30,122,74,.2); color: var(--green);
+    }
+    .skill-chip.miss {
+      background: var(--cream2); border: 1px solid var(--cream3); color: var(--muted);
+    }
+
+    /* ── AI FEEDBACK MODAL ── */
+    .modal-overlay {
+      display: none; position: fixed; inset: 0; z-index: 500;
+      background: rgba(26,22,16,.55); backdrop-filter: blur(6px);
+      align-items: center; justify-content: center; padding: 1.5rem;
+    }
+    .modal-overlay.open { display: flex; animation: fadeIn .2s ease; }
+    .modal {
+      background: #fff; border-radius: var(--rl);
+      width: 100%; max-width: 640px; max-height: 88vh; overflow-y: auto;
+      box-shadow: 0 32px 80px rgba(26,22,16,.25);
+      animation: slideUp .25s ease;
+    }
+    .modal-head {
+      position: sticky; top: 0; background: #fff;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 1.3rem 1.7rem; border-bottom: 1px solid var(--cream2);
+      z-index: 10;
+    }
+    .modal-title {
+      font-family: 'Playfair Display', Georgia, serif;
+      font-size: 1.1rem; font-weight: 700; color: var(--ink);
+    }
+    .modal-close {
+      background: none; border: none; cursor: pointer; font-size: 1.2rem;
+      color: var(--muted); padding: .2rem .4rem; border-radius: var(--r);
+      transition: color .15s;
+    }
+    .modal-close:hover { color: var(--ink); }
+    .modal-body { padding: 1.5rem 1.7rem; }
+
+    .fb-summary {
+      background: var(--cream2); border-radius: var(--rm);
+      padding: 1rem 1.1rem; font-size: .9rem; color: var(--ink3);
+      line-height: 1.55; margin-bottom: 1.3rem;
+      border-left: 3px solid var(--gold);
+    }
+
+    .fb-section { margin-bottom: 1.2rem; }
+    .fb-section-title {
+      font-size: .7rem; font-weight: 800;
+      letter-spacing: .1em; text-transform: uppercase;
+      margin-bottom: .6rem; display: flex; align-items: center; gap: .5rem;
+    }
+    .fb-section-title::after { content: ''; flex: 1; height: 1px; background: var(--cream3); }
+    .fb-list { list-style: none; display: flex; flex-direction: column; gap: .45rem; }
+    .fb-list li {
+      display: flex; align-items: flex-start; gap: .6rem;
+      font-size: .87rem; color: var(--ink3); line-height: 1.45;
+    }
+    .fb-list li::before { content: attr(data-icon); flex-shrink: 0; font-size: .85rem; margin-top: .05rem; }
+
+    .bd-row {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: .6rem 0; border-bottom: 1px solid var(--cream2);
+      font-size: .87rem;
+    }
+    .bd-row:last-child { border-bottom: none; }
+    .bd-bar-wrap { display: flex; align-items: center; gap: .7rem; }
+    .bd-bar { width: 100px; height: 5px; background: var(--cream2); border-radius: 10px; overflow: hidden; }
+    .bd-fill { height: 100%; border-radius: 10px; background: linear-gradient(90deg, var(--gold), var(--gold2)); }
+    .bd-val { font-family: 'Playfair Display', Georgia, serif; font-weight: 900; font-size: .95rem; color: var(--ink); min-width: 34px; text-align: right; }
+
+    @keyframes fadeIn  { from{opacity:0} to{opacity:1} }
+    @keyframes slideUp { from{opacity:0;transform:translateY(20px)} to{opacity:1;transform:translateY(0)} }
+
+    /* loading spinner */
+    .spinner {
+      display: inline-block; width: 12px; height: 12px;
+      border: 2px solid rgba(108,92,231,.3); border-top-color: #6c5ce7;
+      border-radius: 50%; animation: spin .6s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+  </style>
+</head>
+<body>
+
+<nav>
+  <a class="nav-logo" href="/dashboard">Resume<em>AI</em></a>
+  <div class="nav-right">
+    <a class="nav-link" href="/analytics">Analytics</a>
+    {% if role == 'admin' %}
+    <div class="nav-sep"></div>
+    <a class="nav-link" href="/admin" style="color:var(--gold);font-weight:700">⚙ Admin</a>
+    {% endif %}
+    <div class="nav-sep"></div>
+    <span class="nav-chip">{{ user }}</span>
+    <div class="nav-sep"></div>
+    <a class="nav-link" href="/logout">Sign out</a>
+  </div>
+</nav>
+
+<main>
+<div class="container">
+
+  <div class="page-head">
+    <div>
+      <div class="page-eyebrow">Your workspace</div>
+      <h1>Resume <em>Analysis</em></h1>
+      <p>Upload a resume to get an ATS score, job recommendations, and AI feedback.</p>
+    </div>
+  </div>
+
+  {% if upload_error %}
+  <div class="upload-err">⚠ {{ upload_error }}</div>
+  {% endif %}
+
+  <form method="POST" action="/upload" enctype="multipart/form-data">
+    <div class="upload-zone">
+      <div>
+        <div class="upload-zone-title">Upload a Resume</div>
+        <div class="upload-zone-hint">Supports PDF, PNG, JPG · Max 5 MB</div>
+      </div>
+      <div class="upload-right">
+        <div class="file-wrap">
+          <input type="file" id="resume-file" name="resume" accept=".pdf,.png,.jpg,.jpeg" required>
+          <label class="file-lbl" for="resume-file">↑ &nbsp;Choose File</label>
+        </div>
+        <span id="fname">No file chosen</span>
+        <button type="submit" id="analyse-btn" class="btn btn-ghost btn-sm" disabled>Analyse →</button>
+      </div>
+    </div>
+  </form>
+
+  {% if resumes %}
+  <div class="sec-label">{{ resumes|length }} Submission{{ 's' if resumes|length != 1 }}</div>
+  <div class="resume-grid">
+    {% for r in resumes %}
+    <div class="rcard">
+      <div class="rcard-bar bar-{{ r.cls }}"></div>
+      <div class="rcard-body">
+
+        <div class="rcard-top">
+          <div>
+            <div class="rcard-name">{{ r.filename or 'Resume' }}</div>
+            <div class="rcard-date">{{ r.uploaded_at[:10] if r.uploaded_at else '' }}</div>
+          </div>
+          <div class="score-box">
+            <div class="score-num">{{ r.score|int }}<span class="score-pct">%</span></div>
+            <span class="score-pill pill-{{ r.cls }}">{{ r.label }}</span>
+          </div>
+        </div>
+
+        <div class="prog-wrap">
+          <div class="prog-meta"><span>ATS Match</span><span>{{ r.score }}%</span></div>
+          <div class="prog-track">
+            <div class="prog-fill fill-{{ r.cls }}" style="width:0" data-w="{{ r.score }}"></div>
+          </div>
+        </div>
+
+        {% if r.jobs %}
+        <div class="rcard-div"></div>
+        <div class="jobs-head">Recommended Roles</div>
+        <div class="jobs-pills">
+          {% for j in r.jobs %}
+          <span class="jpill {% if loop.index == 1 %}top{% endif %}">{% if loop.index == 1 %}★ {% endif %}{{ j.role }}</span>
+          {% endfor %}
+        </div>
+        {% endif %}
+
+        <!-- Skills found -->
+        {% if r.found_skills %}
+        <div class="rcard-div"></div>
+        <div class="skills-section">
+          <div class="skills-found-label">✓ Skills Found ({{ r.found_skills|length }})</div>
+          {% for sk in r.found_skills[:10] %}
+          <span class="skill-chip">{{ sk }}</span>
+          {% endfor %}
+          {% if r.missing_skills %}
+          <div class="skills-miss-label">Missing Keywords</div>
+          {% for sk in r.missing_skills %}
+          <span class="skill-chip miss">{{ sk }}</span>
+          {% endfor %}
+          {% endif %}
+        </div>
+        {% endif %}
+
+        <!-- Action buttons -->
+        <div class="action-bar">
+          {% if r.ai_feedback_parsed %}
+          <button class="act-ai" onclick="openModal('modal-{{ r.id }}')">
+            ✦ View AI Feedback
+          </button>
+          {% else %}
+          <a class="act-ai" href="/ai-feedback/{{ r.id }}" id="ai-btn-{{ r.id }}">
+            ✦ Get AI Feedback
+          </a>
+          {% endif %}
+          <a class="act-pdf" href="/report/{{ r.id }}">
+            ↓ Download Report
+          </a>
+        </div>
+
+      </div><!-- rcard-body -->
+    </div><!-- rcard -->
+
+    <!-- AI FEEDBACK MODAL -->
+    {% if r.ai_feedback_parsed %}
+    {% set fb = r.ai_feedback_parsed %}
+    <div class="modal-overlay" id="modal-{{ r.id }}" onclick="closeIfOverlay(event, 'modal-{{ r.id }}')">
+      <div class="modal">
+        <div class="modal-head">
+          <div class="modal-title">AI Feedback — {{ r.filename or 'Resume' }}</div>
+          <button class="modal-close" onclick="closeModal('modal-{{ r.id }}')" aria-label="Close">✕</button>
+        </div>
+        <div class="modal-body">
+
+          {% if fb.summary %}
+          <div class="fb-summary">{{ fb.summary }}</div>
+          {% endif %}
+
+          {% if fb.score_breakdown %}
+          <div class="fb-section">
+            <div class="fb-section-title" style="color:var(--gold)">Score Breakdown</div>
+            {% for cat, val in [('Content Quality', fb.score_breakdown.content), ('Keyword Match', fb.score_breakdown.keywords), ('Structure', fb.score_breakdown.structure)] %}
+            <div class="bd-row">
+              <span>{{ cat }}</span>
+              <div class="bd-bar-wrap">
+                <div class="bd-bar"><div class="bd-fill" style="width:{{ val }}%"></div></div>
+                <span class="bd-val">{{ val }}%</span>
+              </div>
+            </div>
+            {% endfor %}
+          </div>
+          {% endif %}
+
+          {% if fb.strengths %}
+          <div class="fb-section">
+            <div class="fb-section-title" style="color:var(--green)">Strengths</div>
+            <ul class="fb-list">
+              {% for s in fb.strengths %}<li data-icon="✓">{{ s }}</li>{% endfor %}
+            </ul>
+          </div>
+          {% endif %}
+
+          {% if fb.improvements %}
+          <div class="fb-section">
+            <div class="fb-section-title" style="color:var(--amber)">Areas to Improve</div>
+            <ul class="fb-list">
+              {% for s in fb.improvements %}<li data-icon="↑">{{ s }}</li>{% endfor %}
+            </ul>
+          </div>
+          {% endif %}
+
+          {% if fb.tips %}
+          <div class="fb-section">
+            <div class="fb-section-title" style="color:var(--ink3)">Action Tips</div>
+            <ul class="fb-list">
+              {% for t in fb.tips %}<li data-icon="{{ loop.index }}">{{ t }}</li>{% endfor %}
+            </ul>
+          </div>
+          {% endif %}
+
+          {% if fb.missing_skills %}
+          <div class="fb-section">
+            <div class="fb-section-title" style="color:var(--muted)">Suggested Skills to Add</div>
+            <div>
+              {% for sk in fb.missing_skills %}<span class="skill-chip miss">{{ sk }}</span>{% endfor %}
+            </div>
+          </div>
+          {% endif %}
+
+        </div>
+      </div>
+    </div>
+    {% endif %}
+
+    {% endfor %}
+  </div>
+
+  {% else %}
+  <div class="empty">
+    <div class="empty-ico">📂</div>
+    <h3>No resumes yet</h3>
+    <p>Upload your first resume above to get started.</p>
+  </div>
+  {% endif %}
+
+</div>
+</main>
+
+<script>
+  // file input
+  const fi = document.getElementById('resume-file');
+  const fn = document.getElementById('fname');
+  const ab = document.getElementById('analyse-btn');
+  fi.addEventListener('change', () => {
+    if (fi.files.length) {
+      fn.textContent = fi.files[0].name;
+      ab.disabled = false;
+      ab.style.borderColor = 'var(--gold)';
+      ab.style.color = 'var(--gold)';
+    }
+  });
+
+  // progress bars
+  window.addEventListener('load', () => {
+    setTimeout(() => {
+      document.querySelectorAll('.prog-fill').forEach(b => { b.style.width = b.dataset.w + '%'; });
+    }, 250);
+  });
+
+  // modal
+  function openModal(id)  { document.getElementById(id).classList.add('open'); document.body.style.overflow='hidden'; }
+  function closeModal(id) { document.getElementById(id).classList.remove('open'); document.body.style.overflow=''; }
+  function closeIfOverlay(e, id) { if (e.target === e.currentTarget) closeModal(id); }
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') document.querySelectorAll('.modal-overlay.open').forEach(m => { m.classList.remove('open'); document.body.style.overflow=''; }); });
+
+  // AI button loading state
+  document.querySelectorAll('a.act-ai').forEach(a => {
+    a.addEventListener('click', () => {
+      a.innerHTML = '<span class="spinner"></span> Analysing...';
+      a.style.pointerEvents = 'none';
+    });
+  });
+</script>
+</body>
+</html>

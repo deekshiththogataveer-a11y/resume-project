@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Admin — ResumeAI</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,900;1,700&family=Epilogue:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+
+<nav>
+  <a class="nav-logo" href="/admin">Resume<em>AI</em></a>
+  <div class="nav-right">
+    <span class="nav-chip admin-chip">Admin</span>
+    <div class="nav-sep"></div>
+    <a class="nav-link" href="/dashboard">Dashboard</a>
+    <div class="nav-sep"></div>
+    <a class="nav-link" href="/logout">Sign out</a>
+  </div>
+</nav>
+
+<main>
+<div class="container">
+
+  <div class="page-head">
+    <div>
+      <div class="page-eyebrow">Control panel</div>
+      <h1>Admin <em>Overview</em></h1>
+      <p>Monitor all users, submissions and ATS performance.</p>
+    </div>
+  </div>
+
+  <!-- Stats -->
+  <div class="stats-row">
+    <div class="scard" data-icon="👥">
+      <div class="scard-label">Registered Users</div>
+      <div class="scard-val">{{ total_users }}</div>
+      <div class="scard-line"></div>
+    </div>
+    <div class="scard" data-icon="📄">
+      <div class="scard-label">Total Resumes</div>
+      <div class="scard-val">{{ total_resumes }}</div>
+      <div class="scard-line"></div>
+    </div>
+    <div class="scard" data-icon="📊">
+      <div class="scard-label">Avg ATS Score</div>
+      <div class="scard-val">{{ avg_score }}<span>%</span></div>
+      <div class="scard-line"></div>
+    </div>
+  </div>
+
+  <!-- Resumes Table -->
+  <div class="tbl-section">
+    <div class="tbl-head">
+      <div class="tbl-title">All Submissions</div>
+      <span class="tbl-badge">{{ data|length }} total</span>
+    </div>
+    <table>
+      <thead>
+        <tr>
+          <th>#</th><th>Email</th><th>File</th>
+          <th>Score</th><th>Status</th><th>Uploaded</th><th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in data %}
+        <tr>
+          <td class="td-mono">{{ row.id }}</td>
+          <td style="font-weight:600">{{ row.email }}</td>
+          <td class="td-mono" style="max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ row.filename or '—' }}</td>
+          <td class="td-score">{{ row.score }}%</td>
+          <td><span class="score-pill pill-{{ row.cls }}">{{ row.label }}</span></td>
+          <td class="td-mono">{{ row.uploaded_at[:10] if row.uploaded_at else '—' }}</td>
+          <td>
+            <a href="/delete/{{ row.id }}" class="btn btn-danger"
+               onclick="return confirm('Delete this resume permanently?')">Delete</a>
+          </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="7" style="text-align:center;color:var(--muted);padding:2.5rem">No submissions yet.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Users Table -->
+  <div class="tbl-section">
+    <div class="tbl-head">
+      <div class="tbl-title">Registered Users</div>
+      <span class="tbl-badge">{{ users_list|length }} total</span>
+    </div>
+    <table>
+      <thead>
+        <tr><th>Email</th><th>Role</th></tr>
+      </thead>
+      <tbody>
+        {% for u in users_list %}
+        <tr>
+          <td style="font-weight:600">{{ u[0] }}</td>
+          <td>
+            <span class="score-pill {% if u[1] == 'admin' %}pill-good{% else %}pill-excellent{% endif %}">
+              {{ u[1] }}
+            </span>
+          </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="2" style="text-align:center;color:var(--muted);padding:2rem">No users found.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+</div>
+</main>
+
+</body>
+</html>

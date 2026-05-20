@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Analytics — ResumeAI</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,900;1,700&family=Epilogue:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+  <style>
+    .chart-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.4rem;
+      margin-bottom: 1.4rem;
+    }
+    .chart-card {
+      background: #fff;
+      border: 1px solid var(--cream3);
+      border-radius: var(--rl);
+      box-shadow: var(--shadow-sm);
+      padding: 1.5rem;
+      animation: fadeUp .4s ease both;
+    }
+    .chart-card.wide { grid-column: 1 / -1; }
+    .chart-card:nth-child(1) { animation-delay: .05s; }
+    .chart-card:nth-child(2) { animation-delay: .10s; }
+    .chart-card:nth-child(3) { animation-delay: .15s; }
+    .chart-card:nth-child(4) { animation-delay: .20s; }
+    .chart-title {
+      font-family: 'Playfair Display', Georgia, serif;
+      font-size: .98rem; font-weight: 700; color: var(--ink);
+      margin-bottom: .3rem;
+    }
+    .chart-sub { font-size: .78rem; color: var(--muted); margin-bottom: 1.2rem; }
+    .chart-wrap { position: relative; height: 220px; }
+    .chart-wrap.tall { height: 260px; }
+    canvas { max-width: 100% !important; }
+
+    @media (max-width: 680px) {
+      .chart-grid { grid-template-columns: 1fr; }
+      .chart-card.wide { grid-column: auto; }
+    }
+  </style>
+</head>
+<body>
+
+<nav>
+  <a class="nav-logo" href="/dashboard">Resume<em>AI</em></a>
+  <div class="nav-right">
+    <a class="nav-link" href="/dashboard">Dashboard</a>
+    <div class="nav-sep"></div>
+    <span class="nav-chip">{{ user }}</span>
+    <div class="nav-sep"></div>
+    <a class="nav-link" href="/logout">Sign out</a>
+  </div>
+</nav>
+
+<main>
+<div class="container">
+
+  <div class="page-head">
+    <div>
+      <div class="page-eyebrow">Insights</div>
+      <h1>Score <em>Analytics</em></h1>
+      <p>Track your resume performance and skill trends over time.</p>
+    </div>
+  </div>
+
+  {% if not has_data %}
+  <div class="empty">
+    <div class="empty-ico">📊</div>
+    <h3>No data yet</h3>
+    <p>Upload your first resume on the dashboard to see analytics.</p>
+  </div>
+
+  {% else %}
+
+  <!-- Summary Stats -->
+  <div class="stats-row" style="margin-bottom:2rem">
+    <div class="scard" data-icon="📄">
+      <div class="scard-label">Resumes Uploaded</div>
+      <div class="scard-val">{{ count }}</div>
+      <div class="scard-line"></div>
+    </div>
+    <div class="scard" data-icon="📊">
+      <div class="scard-label">Average Score</div>
+      <div class="scard-val">{{ avg }}<span>%</span></div>
+      <div class="scard-line"></div>
+    </div>
+    <div class="scard" data-icon="🏆">
+      <div class="scard-label">Best Score</div>
+      <div class="scard-val">{{ best }}<span>%</span></div>
+      <div class="scard-line"></div>
+    </div>
+  </div>
+
+  <div class="chart-grid">
+
+    <!-- Score Timeline -->
+    <div class="chart-card wide">
+      <div class="chart-title">Score History</div>
+      <div class="chart-sub">ATS match score across all submissions</div>
+      <div class="chart-wrap tall">
+        <canvas id="lineChart"></canvas>
+      </div>
+    </div>
+
+    <!-- Distribution -->
+    <div class="chart-card">
+      <div class="chart-title">Score Distribution</div>
+      <div class="chart-sub">How your resumes are classified</div>
+      <div class="chart-wrap">
+        <canvas id="doughnutChart"></canvas>
+      </div>
+    </div>
+
+    <!-- Top Skills -->
+    <div class="chart-card">
+      <div class="chart-title">Top Skills Detected</div>
+      <div class="chart-sub">Most frequent skills across your resumes</div>
+      <div class="chart-wrap">
+        <canvas id="barChart"></canvas>
+      </div>
+    </div>
+
+  </div>
+
+  {% endif %}
+</div>
+</main>
+
+{% if has_data %}
+<script>
+  const scores  = {{ scores|safe }};
+  const dates   = {{ dates|safe }};
+  const fnames  = {{ fnames|safe }};
+  const distL   = {{ dist_labels|safe }};
+  const distD   = {{ dist_data|safe }};
+  const skillL  = {{ skill_labels|safe }};
+  const skillD  = {{ skill_data|safe }};
+
+  const ink   = '#1a1610';
+  const gold  = '#b8922a';
+  const gold2 = '#d4aa45';
+  const muted = '#8a7d6e';
+  const cream2= '#ede8de';
+  const green = '#1e7a4a';
+  const amber = '#c47a1e';
+  const red   = '#c0392b';
+
+  Chart.defaults.font.family = "'Epilogue', 'Segoe UI', sans-serif";
+  Chart.defaults.color = muted;
+
+  // ── LINE CHART ──
+  new Chart(document.getElementById('lineChart'), {
+    type: 'line',
+    data: {
+      labels: dates,
+      datasets: [{
+        label: 'ATS Score',
+        data: scores,
+        borderColor: gold,
+        backgroundColor: 'rgba(184,146,42,0.08)',
+        borderWidth: 2,
+        pointBackgroundColor: gold,
+        pointRadius: 5,
+        pointHoverRadius: 7,
+        fill: true,
+        tension: 0.35,
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: '#fff',
+          titleColor: ink, bodyColor: muted,
+          borderColor: cream2, borderWidth: 1,
+          padding: 10,
+          callbacks: {
+            title: ctx => fnames[ctx[0].dataIndex] || dates[ctx[0].dataIndex],
+            label: ctx => `ATS Score: ${ctx.parsed.y}%`
+          }
+        }
+      },
+      scales: {
+        x: { grid: { color: cream2 }, ticks: { font: { size: 11 } } },
+        y: {
+          min: 0, max: 100,
+          grid: { color: cream2 },
+          ticks: { font: { size: 11 }, callback: v => v + '%' }
+        }
+      }
+    }
+  });
+
+  // ── DOUGHNUT ──
+  const distColors = [red, amber, gold, green];
+  new Chart(document.getElementById('doughnutChart'), {
+    type: 'doughnut',
+    data: {
+      labels: distL,
+      datasets: [{
+        data: distD,
+        backgroundColor: distColors,
+        borderWidth: 2,
+        borderColor: '#fff',
+        hoverOffset: 6,
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      cutout: '65%',
+      plugins: {
+        legend: {
+          position: 'bottom',
+          labels: { padding: 14, font: { size: 11 }, boxWidth: 12, boxHeight: 12 }
+        },
+        tooltip: {
+          backgroundColor: '#fff', titleColor: ink, bodyColor: muted,
+          borderColor: cream2, borderWidth: 1, padding: 10,
+        }
+      }
+    }
+  });
+
+  // ── BAR CHART ──
+  new Chart(document.getElementById('barChart'), {
+    type: 'bar',
+    data: {
+      labels: skillL,
+      datasets: [{
+        label: 'Frequency',
+        data: skillD,
+        backgroundColor: skillD.map((_, i) => i === 0 ? gold : 'rgba(184,146,42,0.25)'),
+        borderRadius: 4,
+        borderSkipped: false,
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      indexAxis: 'y',
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: '#fff', titleColor: ink, bodyColor: muted,
+          borderColor: cream2, borderWidth: 1, padding: 10,
+          callbacks: { label: ctx => `Found in ${ctx.parsed.x} resume(s)` }
+        }
+      },
+      scales: {
+        x: { grid: { color: cream2 }, ticks: { font: { size: 11 } } },
+        y: { grid: { display: false }, ticks: { font: { size: 11 } } }
+      }
+    }
+  });
+</script>
+{% endif %}
+
+</body>
+</html>

@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Sign In — ResumeAI</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,900;1,700&family=Epilogue:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+<div class="auth-wrap">
+
+  <!-- LEFT PANEL -->
+  <div class="auth-left">
+    <div class="al-logo">Resume<em>AI</em></div>
+
+    <div class="al-body">
+      <div class="al-tag">Resume Intelligence</div>
+      <p class="al-quote">"Your next role starts with a resume that speaks first."</p>
+      <div class="al-features">
+        <div class="al-feat"><span class="al-feat-dot"></span>Instant ATS score analysis</div>
+        <div class="al-feat"><span class="al-feat-dot"></span>AI-powered job matching</div>
+        <div class="al-feat"><span class="al-feat-dot"></span>PDF & image resume support</div>
+      </div>
+    </div>
+
+    <div class="al-foot">© 2024 ResumeAI &nbsp;·&nbsp; All rights reserved</div>
+  </div>
+
+  <!-- RIGHT PANEL -->
+  <div class="auth-right">
+    <div class="auth-box">
+      <div class="auth-eyebrow">Welcome back</div>
+      <h1>Sign in to your<br><em>workspace</em></h1>
+
+      {% if error %}
+      <div class="err">⚠&nbsp; {{ error }}</div>
+      {% endif %}
+
+      <form method="POST" action="/login">
+        <div class="form-row">
+          <label for="email">Email Address</label>
+          <input type="email" id="email" name="email"
+                 placeholder="you@example.com" required autocomplete="email">
+        </div>
+        <div class="form-row">
+          <label for="password">Password</label>
+          <input type="password" id="password" name="password"
+                 placeholder="Enter your password" required autocomplete="current-password">
+        </div>
+        <button type="submit" class="btn btn-primary" style="margin-top:.75rem">
+          Continue &nbsp;→
+        </button>
+      </form>
+
+      <p class="auth-alt">
+        Don't have an account? <a href="/register">Create one free</a>
+      </p>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>

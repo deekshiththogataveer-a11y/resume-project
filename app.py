@@ -22,7 +22,11 @@ app.secret_key = "resume_ai_secure_key_2024"
 app.permanent_session_lifetime = timedelta(minutes=60)
 app.config["MAX_CONTENT_LENGTH"] = 5 * 1024 * 1024
 
-pytesseract.pytesseract.tesseract_cmd = r"C:\Program Files\Tesseract-OCR\tesseract.exe"
+import os
+import platform
+if platform.system() == "Windows":
+    pytesseract.pytesseract.tesseract_cmd = r"C:\Program Files\Tesseract-OCR\tesseract.exe"
+# On Linux (Render), tesseract is on PATH by default
 ALLOWED_EXTENSIONS = {"pdf", "png", "jpg", "jpeg"}
 
 def init_db():
@@ -297,7 +301,7 @@ def register():
         if len(password) < 6:
             return render_template("register.html", error="Password must be at least 6 characters.")
         hashed = generate_password_hash(password)
-        role = "f" if email == "admin@gmail.com" else "user"
+        role = "admin" if email == "admin@gmail.com" else "user"
         try:
             with sqlite3.connect("database.db") as conn:
                 cur = conn.cursor()
@@ -459,4 +463,5 @@ def logout():
     session.clear(); return redirect("/login")
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host="0.0.0.0", port=port, debug=False)
